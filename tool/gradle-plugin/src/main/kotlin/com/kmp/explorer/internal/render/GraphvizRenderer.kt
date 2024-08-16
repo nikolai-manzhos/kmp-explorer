@@ -125,8 +125,9 @@ private class GraphvizRenderer(
 }
 
 internal fun createRenderer(
-    kmpProjectStructure: KmpProjectStructure
+    kmpProjectStructure: KmpProjectStructure,
+    type: SourceSetType
 ): Renderer {
-    return GraphvizRenderer(kmpProjectStructure, SourceSetType.MAIN)
+    return GraphvizRenderer(kmpProjectStructure, type)
 }
 

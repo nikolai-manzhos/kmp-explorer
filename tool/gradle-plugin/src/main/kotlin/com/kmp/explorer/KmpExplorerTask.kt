@@ -1,5 +1,6 @@
 package com.kmp.explorer
 
+import com.kmp.explorer.external.SourceSetType
 import com.kmp.explorer.internal.KmpProjectStructure
 import com.kmp.explorer.internal.render.createRenderer
 import org.gradle.api.DefaultTask
@@ -12,6 +13,10 @@ import org.gradle.api.tasks.TaskAction
 internal abstract class KmpExplorerTask : DefaultTask() {
 
     @Input
+    val sourceSetType: Property<SourceSetType> =
+        project.objects.property(SourceSetType::class.java)
+
+    @Input
     val kmpProjectStructureProperty: Property<KmpProjectStructure> =
         project.objects.property(KmpProjectStructure::class.java)
 
@@ -21,7 +26,7 @@ internal abstract class KmpExplorerTask : DefaultTask() {
     @TaskAction
     fun run() {
         val kmpProjectStructure = kmpProjectStructureProperty.get()
-        val renderer = createRenderer(kmpProjectStructure)
+        val renderer = createRenderer(kmpProjectStructure, sourceSetType.get())
         renderer.render(hierarchyOutput.asFile.get())
     }
 }

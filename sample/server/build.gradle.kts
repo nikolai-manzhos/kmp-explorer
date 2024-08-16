@@ -13,6 +13,7 @@ application {
 
 dependencies {
     implementation(projects.sample.shared)
+    implementation(projects.sample.jvmShared)
     implementation(libs.logback)
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)

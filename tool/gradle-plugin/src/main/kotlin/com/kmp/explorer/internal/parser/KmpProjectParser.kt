@@ -8,18 +8,24 @@ import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.*
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
+import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrTarget
 
 private const val KMP_PLUGIN_ID = "org.jetbrains.kotlin.multiplatform"
 
-internal class KmpProjectParser {
+internal class KmpProjectParser(
+    private val type: SourceSetType
+) {
 
     fun parse(project: Project): KmpProjectStructure {
         val kmpProjectsRelation = mutableMapOf<String, MutableSet<String>>()
         val projectGraphs =
             mutableMapOf<String, MutableMap<KmpSourceNode, MutableList<KmpSourceNode>>>()
-        buildKmpGraph(project, kmpProjectsRelation, projectGraphs, null)
-        println(projectGraphs)
+        buildKmpGraph(project, kmpProjectsRelation, projectGraphs, null, null)
         return KmpProjectStructure(project.path, kmpProjectsRelation, projectGraphs)
     }
 
@@ -27,15 +33,24 @@ internal class KmpProjectParser {
         project: Project,
         projectStructure: MutableMap<String, MutableSet<String>>,
         projectGraphs: MutableMap<String, MutableMap<KmpSourceNode, MutableList<KmpSourceNode>>>,
-        parentSourceSets: Set<KotlinSourceSet>?
+        parentSourceSets: Set<KotlinSourceSet>?,
+        parentTargets: Set<String>?
     ) {
         val projectPath = project.path
         if (projectGraphs.contains(projectPath)) return
         val graph = projectGraphs.computeIfAbsent(projectPath) { mutableMapOf() }
         val kmp = project.extensions.getByType<KotlinMultiplatformExtension>()
         val kmpSourceNodes = mutableMapOf<String, KmpSourceNode>()
-        kmp.sourceSets.forEach { ss ->
-            if (ss.name.lowercase().contains("test")) return@forEach
+        val kmpSourceSetToTarget = mutableMapOf<String, String>()
+        kmp.targets.forEach { target ->
+            target.compilations.flatMap { it.kotlinSourceSets }
+                .map(KotlinSourceSet::getName)
+                .filterNot(type::shouldBeExcluded)
+                .forEach { sourceSet ->
+                    kmpSourceSetToTarget[sourceSet] = target.extractFullName()
+                }
+        }
+        kmp.sourceSets.filterNot { type.shouldBeExcluded(it.name) }.forEach { ss ->
             val currentNode = kmpSourceNodes.getOrPut(ss.name) {
                 KmpSourceNode(
                     ss.name,
@@ -43,7 +58,7 @@ internal class KmpProjectParser {
                 )
             }
             graph.computeIfAbsent(currentNode) { mutableListOf() }
-            ss.dependsOn.forEach { parent ->
+            ss.dependsOn.filterNot { type.shouldBeExcluded(it.name) }.forEach { parent ->
                 val parentNode = kmpSourceNodes.getOrPut(parent.name) {
                     KmpSourceNode(
                         parent.name,
@@ -62,11 +77,15 @@ internal class KmpProjectParser {
                 }
             }
 
-            // Update visibility of transitive nodes.
             graph.keys
                 .filterNot { it.isVisible }
                 .forEach { invisibleNode ->
-                    if (isConnectedToVisibleNode(invisibleNode, graph)) {
+                    val currentTarget = kmpSourceSetToTarget[invisibleNode.name]
+                    val targetsCount = kmpSourceSetToTarget.count { (_, target) -> target == currentTarget }
+                    val hasCertainTarget = parentTargets?.let {
+                        parentTargets.contains(currentTarget) && targetsCount == 1
+                    } ?: false
+                    if (isConnectedToVisibleNode(invisibleNode, graph) || hasCertainTarget) {
                         invisibleNode.isVisible = true
                     }
                 }
@@ -80,11 +99,16 @@ internal class KmpProjectParser {
                     projectStructure.computeIfAbsent(project.path) { mutableSetOf() }
                         .add(projectDep.path)
 
+                    val nextParentTargets = if (parentTargets == null)  {
+                        kmpSourceSetToTarget.values.toSet()
+                    } else emptySet()
+
                     buildKmpGraph(
                         projectDep,
                         projectStructure,
                         projectGraphs,
-                        parentSourceSets ?: kmp.sourceSets.toSet()
+                        parentSourceSets ?: kmp.sourceSets.toSet(),
+                        nextParentTargets
                     )
                 }
         }
@@ -110,5 +134,17 @@ internal class KmpProjectParser {
 
     private fun findVisibility(name: String, parentSourceSets: Set<KotlinSourceSet>?): Boolean {
         return parentSourceSets?.map(KotlinSourceSet::getName)?.contains(name) ?: true
+    }
+
+    private fun KotlinTarget.extractFullName(): String {
+        val postfix = when (platformType) {
+            common -> ""
+            jvm -> ""
+            js -> ""
+            androidJvm -> (this as KotlinAndroidTarget).name
+            native -> (this as KotlinNativeTarget).konanTarget.name
+            wasm -> (this as KotlinJsIrTarget).wasmTargetType?.name
+        }
+        return "${platformType.name}:$postfix"
     }
 }

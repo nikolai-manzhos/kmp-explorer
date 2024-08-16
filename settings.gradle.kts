@@ -32,3 +32,4 @@ dependencyResolutionManagement {
 include(":sample:composeApp")
 include(":sample:server")
 include(":sample:shared")
+include(":sample:jvm-shared")

@@ -34,25 +34,17 @@ kotlin {
     iosX64()
     iosArm64()
     iosSimulatorArm64()
-
     jvm()
 
     macosX64()
     linuxX64()
     
     sourceSets {
+        applyDefaultHierarchyTemplate()
 
-//        val iosAndWasmJs by creating {
-//            dependsOn(commonMain.get())
-//        }
-//
-//        iosMain {
-//            dependsOn(iosAndWasmJs)
-//        }
-//
-//        wasmJsMain {
-//            dependsOn(iosAndWasmJs)
-//        }
+        jvmMain.dependencies {
+            implementation(projects.sample.jvmShared)
+        }
     }
 }
 
