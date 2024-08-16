@@ -22,23 +22,23 @@ internal class KmpProjectParser(
 ) {
 
     fun parse(project: Project): KmpProjectStructure {
-        val kmpProjectsRelation = mutableMapOf<String, MutableSet<String>>()
-        val projectGraphs =
+        val projectDependencies = mutableMapOf<String, MutableSet<String>>()
+        val graphByProject =
             mutableMapOf<String, MutableMap<KmpSourceNode, MutableList<KmpSourceNode>>>()
-        buildKmpGraph(project, kmpProjectsRelation, projectGraphs, null, null)
-        return KmpProjectStructure(project.path, kmpProjectsRelation, projectGraphs)
+        buildKmpGraph(project, projectDependencies, graphByProject, null, null)
+        return KmpProjectStructure(project.path, projectDependencies, graphByProject)
     }
 
     private fun buildKmpGraph(
         project: Project,
         projectStructure: MutableMap<String, MutableSet<String>>,
-        projectGraphs: MutableMap<String, MutableMap<KmpSourceNode, MutableList<KmpSourceNode>>>,
+        graphByProject: MutableMap<String, MutableMap<KmpSourceNode, MutableList<KmpSourceNode>>>,
         parentSourceSets: Set<KotlinSourceSet>?,
         parentTargets: Set<String>?
     ) {
         val projectPath = project.path
-        if (projectGraphs.contains(projectPath)) return
-        val graph = projectGraphs.computeIfAbsent(projectPath) { mutableMapOf() }
+        if (graphByProject.contains(projectPath)) return
+        val graph = graphByProject.computeIfAbsent(projectPath) { mutableMapOf() }
         val kmp = project.extensions.getByType<KotlinMultiplatformExtension>()
         val kmpSourceNodes = mutableMapOf<String, KmpSourceNode>()
         val kmpSourceSetToTarget = mutableMapOf<String, String>()
@@ -68,11 +68,13 @@ internal class KmpProjectParser(
                 graph.computeIfAbsent(parentNode) { mutableListOf() }
                     .add(currentNode)
             }
+            // Remove redundant connection to common(Main/Test)
+            // when the node is connected transitively
             val children = graph.values.flatten()
             children.forEach { node ->
                 val count = children.count { it == node }
                 if (count >= 2) {
-                    graph.getValue(kmpSourceNodes.getValue(SourceSetType.MAIN.value))
+                    graph.getValue(kmpSourceNodes.getValue(type.value))
                         .remove(node)
                 }
             }
@@ -106,7 +108,7 @@ internal class KmpProjectParser(
                     buildKmpGraph(
                         projectDep,
                         projectStructure,
-                        projectGraphs,
+                        graphByProject,
                         parentSourceSets ?: kmp.sourceSets.toSet(),
                         nextParentTargets
                     )

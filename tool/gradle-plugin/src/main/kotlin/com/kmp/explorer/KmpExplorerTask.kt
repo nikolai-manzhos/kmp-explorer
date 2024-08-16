@@ -1,8 +1,10 @@
 package com.kmp.explorer
 
+import com.kmp.explorer.external.KmpExplorerExtension
 import com.kmp.explorer.external.SourceSetType
 import com.kmp.explorer.internal.KmpProjectStructure
 import com.kmp.explorer.internal.render.createRenderer
+import guru.nidi.graphviz.engine.Format
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
@@ -13,11 +15,15 @@ import org.gradle.api.tasks.TaskAction
 internal abstract class KmpExplorerTask : DefaultTask() {
 
     @Input
-    val sourceSetType: Property<SourceSetType> =
+    val formatProperty: Property<Format> =
+        project.objects.property(Format::class.java)
+
+    @Input
+    val sourceSetTypeProperty: Property<SourceSetType> =
         project.objects.property(SourceSetType::class.java)
 
     @Input
-    val kmpProjectStructureProperty: Property<KmpProjectStructure> =
+    val projectStructureProperty: Property<KmpProjectStructure> =
         project.objects.property(KmpProjectStructure::class.java)
 
     @OutputFile
@@ -25,8 +31,12 @@ internal abstract class KmpExplorerTask : DefaultTask() {
 
     @TaskAction
     fun run() {
-        val kmpProjectStructure = kmpProjectStructureProperty.get()
-        val renderer = createRenderer(kmpProjectStructure, sourceSetType.get())
+        val kmpProjectStructure = projectStructureProperty.get()
+        val renderer = createRenderer(
+            kmpProjectStructure,
+            sourceSetTypeProperty.get(),
+            formatProperty.get()
+        )
         renderer.render(hierarchyOutput.asFile.get())
     }
 }

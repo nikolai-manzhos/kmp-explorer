@@ -19,23 +19,17 @@ import java.io.File
 private class GraphvizRenderer(
     private val kmpProjectStructure: KmpProjectStructure,
     private val sourceSetType: SourceSetType,
+    private val format: Format
 ) : Renderer {
 
     override fun render(output: File) {
-        buildGraphvizOutput(
-            kmpProjectStructure.rootProjectPath,
-            kmpProjectStructure.projectDependencies,
-            kmpProjectStructure.projectsKmpGraph,
-            output
-        )
+        buildGraphvizOutput(output)
     }
 
-    private fun buildGraphvizOutput(
-        root: String,
-        projectsHierarchy: Map<String, Set<String>>,
-        projectGraphs: Map<String, Map<KmpSourceNode, List<KmpSourceNode>>>,
-        output: File
-    ) {
+    private fun buildGraphvizOutput(output: File) {
+        val root = kmpProjectStructure.rootProjectPath
+        val projectGraphs = kmpProjectStructure.projectsKmpGraph
+        val projectsHierarchy = kmpProjectStructure.projectDependencies
         val clusters = mutableListOf<Graph>()
         val clusterLinks = mutableMapOf<String, String>()
         val queue = mutableListOf<String>()
@@ -44,10 +38,16 @@ private class GraphvizRenderer(
             val current = queue.removeFirst()
             val links = projectGraphs.getValue(current)
                 .flatMap { (root, children) ->
-                    children.map { child ->
-                        val from = createNode(current, root)
-                        val to = createNode(current, child)
-                        from.link(to)
+                    // We still want to include root node in a cluster,
+                    // even if it's not connected
+                    if (children.isEmpty()) {
+                        listOf(createNode(current, root))
+                    } else {
+                        children.map { child ->
+                            val from = createNode(current, root)
+                            val to = createNode(current, child)
+                            from.link(to)
+                        }
                     }
                 }
             clusters.add(
@@ -71,15 +71,24 @@ private class GraphvizRenderer(
             .with(clusters)
             .with(projectsHierarchy.flatMap { (root, deps) ->
                 deps.map { d ->
+                    // Connect clusters with a link
+                    // connection should always follow the following pattern:
+                    // deepestNode -> commonMain/commonTest
                     createClusterConnection(root, d, clusterLinks)
                 }
             })
 
-        Graphviz.fromGraph(g).render(Format.PNG).toFile(output)
+        Graphviz.fromGraph(g).render(format).toFile(output)
     }
 
+    /**
+     * We have to find the deepest leaf in order to align clusters one after another.
+     **/
     private fun findDeepestLeaf(graph: Map<KmpSourceNode, List<KmpSourceNode>>): String {
-        var res = graph.keys.first { it.name == sourceSetType.value }
+        var res = graph.keys.first { curr ->
+            val allChildren = graph.values.flatten().toSet()
+            !allChildren.contains(curr)
+        }
         var maxDepth = 0
         val dfs = mutableListOf<Pair<KmpSourceNode, Int>>()
         dfs.add(Pair(res, 1))
@@ -126,8 +135,9 @@ private class GraphvizRenderer(
 
 internal fun createRenderer(
     kmpProjectStructure: KmpProjectStructure,
-    type: SourceSetType
+    type: SourceSetType,
+    extension: Format,
 ): Renderer {
-    return GraphvizRenderer(kmpProjectStructure, type)
+    return GraphvizRenderer(kmpProjectStructure, type, extension)
 }
 
