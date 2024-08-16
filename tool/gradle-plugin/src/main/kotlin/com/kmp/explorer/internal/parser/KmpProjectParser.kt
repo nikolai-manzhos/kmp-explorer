@@ -25,94 +25,99 @@ internal class KmpProjectParser(
         val projectDependencies = mutableMapOf<String, MutableSet<String>>()
         val graphByProject =
             mutableMapOf<String, MutableMap<KmpSourceNode, MutableList<KmpSourceNode>>>()
-        buildKmpGraph(project, projectDependencies, graphByProject, null, null)
+        buildKmpGraph(project, projectDependencies, graphByProject)
         return KmpProjectStructure(project.path, projectDependencies, graphByProject)
     }
 
     private fun buildKmpGraph(
-        project: Project,
+        rootProject: Project,
         projectStructure: MutableMap<String, MutableSet<String>>,
-        graphByProject: MutableMap<String, MutableMap<KmpSourceNode, MutableList<KmpSourceNode>>>,
-        parentSourceSets: Set<KotlinSourceSet>?,
-        parentTargets: Set<String>?
+        graphByProject: MutableMap<String, MutableMap<KmpSourceNode, MutableList<KmpSourceNode>>>
     ) {
-        val projectPath = project.path
-        if (graphByProject.contains(projectPath)) return
-        val graph = graphByProject.computeIfAbsent(projectPath) { mutableMapOf() }
-        val kmp = project.extensions.getByType<KotlinMultiplatformExtension>()
-        val kmpSourceNodes = mutableMapOf<String, KmpSourceNode>()
-        val kmpSourceSetToTarget = mutableMapOf<String, String>()
-        kmp.targets.forEach { target ->
-            target.compilations.flatMap { it.kotlinSourceSets }
-                .map(KotlinSourceSet::getName)
-                .filterNot(type::shouldBeExcluded)
-                .forEach { sourceSet ->
-                    kmpSourceSetToTarget[sourceSet] = target.extractFullName()
-                }
-        }
-        kmp.sourceSets.filterNot { type.shouldBeExcluded(it.name) }.forEach { ss ->
-            val currentNode = kmpSourceNodes.getOrPut(ss.name) {
-                KmpSourceNode(
-                    ss.name,
-                    findVisibility(ss.name, parentSourceSets)
-                )
-            }
-            graph.computeIfAbsent(currentNode) { mutableListOf() }
-            ss.dependsOn.filterNot { type.shouldBeExcluded(it.name) }.forEach { parent ->
-                val parentNode = kmpSourceNodes.getOrPut(parent.name) {
-                    KmpSourceNode(
-                        parent.name,
-                        findVisibility(parent.name, parentSourceSets)
-                    )
-                }
-                graph.computeIfAbsent(parentNode) { mutableListOf() }
-                    .add(currentNode)
-            }
-            // Remove redundant connection to common(Main/Test)
-            // when the node is connected transitively
-            val children = graph.values.flatten()
-            children.forEach { node ->
-                val count = children.count { it == node }
-                if (count >= 2) {
-                    graph.getValue(kmpSourceNodes.getValue(type.value))
-                        .remove(node)
-                }
+        val bfs = mutableListOf<Triple<Project, Set<KotlinSourceSet>?, Set<String>?>>()
+        bfs.add(Triple(rootProject, null, null))
+        while (bfs.isNotEmpty()) {
+            val (project, parentSourceSets, parentTargets) = bfs.removeFirst()
+            val projectPath = project.path
+            if (graphByProject.contains(projectPath)) continue
+
+            val graph = graphByProject.computeIfAbsent(projectPath) { mutableMapOf() }
+            val kmp = project.extensions.getByType<KotlinMultiplatformExtension>()
+            val kmpSourceNodes = mutableMapOf<String, KmpSourceNode>()
+            val kmpSourceSetToTarget = mutableMapOf<String, String>()
+
+            kmp.targets.forEach { target ->
+                target.compilations.flatMap { it.kotlinSourceSets }
+                    .map(KotlinSourceSet::getName)
+                    .filterNot(type::shouldBeExcluded)
+                    .forEach { sourceSet ->
+                        kmpSourceSetToTarget[sourceSet] = target.extractFullName()
+                    }
             }
 
-            graph.keys
-                .filterNot { it.isVisible }
-                .forEach { invisibleNode ->
-                    val currentTarget = kmpSourceSetToTarget[invisibleNode.name]
-                    val targetsCount = kmpSourceSetToTarget.count { (_, target) -> target == currentTarget }
-                    val hasCertainTarget = parentTargets?.let {
-                        parentTargets.contains(currentTarget) && targetsCount == 1
-                    } ?: false
-                    if (isConnectedToVisibleNode(invisibleNode, graph) || hasCertainTarget) {
-                        invisibleNode.isVisible = true
+            kmp.sourceSets.filterNot { type.shouldBeExcluded(it.name) }.forEach { ss ->
+                val currentNode = kmpSourceNodes.getOrPut(ss.name) {
+                    KmpSourceNode(
+                        ss.name,
+                        findVisibility(ss.name, parentSourceSets)
+                    )
+                }
+                graph.computeIfAbsent(currentNode) { mutableListOf() }
+                ss.dependsOn.filterNot { type.shouldBeExcluded(it.name) }.forEach { parent ->
+                    val parentNode = kmpSourceNodes.getOrPut(parent.name) {
+                        KmpSourceNode(
+                            parent.name,
+                            findVisibility(parent.name, parentSourceSets)
+                        )
+                    }
+                    graph.computeIfAbsent(parentNode) { mutableListOf() }
+                        .add(currentNode)
+                }
+                // Remove redundant connection to common(Main/Test)
+                // when the node is connected transitively
+                val children = graph.values.flatten()
+                children.forEach { node ->
+                    val count = children.count { it == node }
+                    if (count >= 2) {
+                        graph.getValue(kmpSourceNodes.getValue(type.value))
+                            .remove(node)
                     }
                 }
 
-            project.configurations
-                .filter { c -> c.name == ss.implementationConfigurationName }
-                .flatMap { c -> c.allDependencies.withType<ProjectDependency>() }
-                .filter { pd -> pd.dependencyProject.pluginManager.hasPlugin(KMP_PLUGIN_ID) }
-                .map(ProjectDependency::getDependencyProject)
-                .forEach { projectDep ->
-                    projectStructure.computeIfAbsent(project.path) { mutableSetOf() }
-                        .add(projectDep.path)
+                graph.keys
+                    .filterNot { it.isVisible }
+                    .forEach { invisibleNode ->
+                        val currentTarget = kmpSourceSetToTarget[invisibleNode.name]
+                        val targetsCount = kmpSourceSetToTarget.count { (_, target) -> target == currentTarget }
+                        val hasCertainTarget = parentTargets?.let {
+                            parentTargets.contains(currentTarget) && targetsCount == 1
+                        } ?: false
+                        if (isConnectedToVisibleNode(invisibleNode, graph) || hasCertainTarget) {
+                            invisibleNode.isVisible = true
+                        }
+                    }
 
-                    val nextParentTargets = if (parentTargets == null)  {
-                        kmpSourceSetToTarget.values.toSet()
-                    } else emptySet()
+                project.configurations
+                    .filter { c -> c.name == ss.implementationConfigurationName }
+                    .flatMap { c -> c.allDependencies.withType<ProjectDependency>() }
+                    .filter { pd -> pd.dependencyProject.pluginManager.hasPlugin(KMP_PLUGIN_ID) }
+                    .map(ProjectDependency::getDependencyProject)
+                    .forEach { projectDep ->
+                        projectStructure.computeIfAbsent(project.path) { mutableSetOf() }
+                            .add(projectDep.path)
 
-                    buildKmpGraph(
-                        projectDep,
-                        projectStructure,
-                        graphByProject,
-                        parentSourceSets ?: kmp.sourceSets.toSet(),
-                        nextParentTargets
-                    )
-                }
+                        val nextParentTargets = if (parentTargets == null)  {
+                            kmpSourceSetToTarget.values.toSet()
+                        } else emptySet()
+                        val nextParentSourceSets = parentSourceSets ?: kmp.sourceSets.toSet()
+
+                        bfs.add(Triple(
+                            projectDep,
+                            nextParentSourceSets,
+                            nextParentTargets)
+                        )
+                    }
+            }
         }
     }
 
