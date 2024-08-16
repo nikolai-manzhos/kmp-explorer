@@ -1,0 +1,33 @@
+digraph "root" {
+edge ["dir"="forward"]
+graph ["compound"="true","rankdir"="LR"]
+subgraph "cluster_app" {
+edge ["dir"="none"]
+graph ["label"="app"]
+"app:commonMain" ["label"="commonMain","shape"="box","color"="red"]
+"app:androidMain" ["label"="androidMain","shape"="box","color"="red"]
+"app:linuxMain" ["label"="linuxMain","shape"="box","color"="black"]
+"app:commonMain" -> "app:linuxMain"
+"app:commonMain" -> "app:androidMain"
+}
+subgraph "cluster_kmp-lib-1" {
+edge ["dir"="none"]
+graph ["label"="kmp-lib-1"]
+"kmp-lib-1:commonMain" ["label"="commonMain","shape"="box","color"="red"]
+"kmp-lib-1:androidMain" ["label"="androidMain","shape"="box","color"="red"]
+"kmp-lib-1:linuxMain" ["label"="linuxMain","shape"="box","color"="black"]
+"kmp-lib-1:commonMain" -> "kmp-lib-1:linuxMain"
+"kmp-lib-1:commonMain" -> "kmp-lib-1:androidMain"
+}
+subgraph "cluster_kmp-lib-2" {
+edge ["dir"="none"]
+graph ["label"="kmp-lib-2"]
+"kmp-lib-2:commonMain" ["label"="commonMain","shape"="box","color"="red"]
+"kmp-lib-2:androidMain" ["label"="androidMain","shape"="box","color"="red"]
+"kmp-lib-2:linuxMain" ["label"="linuxMain","shape"="box","color"="black"]
+"kmp-lib-2:commonMain" -> "kmp-lib-2:linuxMain"
+"kmp-lib-2:commonMain" -> "kmp-lib-2:androidMain"
+}
+"app:linuxMain" -> "kmp-lib-1:commonMain" ["ltail"="cluster_app","lhead"="cluster_kmp-lib-1","minlen"="4"]
+"kmp-lib-1:linuxMain" -> "kmp-lib-2:commonMain" ["ltail"="cluster_kmp-lib-1","lhead"="cluster_kmp-lib-2","minlen"="4"]
+}

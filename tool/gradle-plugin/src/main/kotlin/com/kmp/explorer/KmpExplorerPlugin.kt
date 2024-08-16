@@ -12,6 +12,9 @@ import org.gradle.kotlin.dsl.register
 
 internal class KmpExplorerPlugin : Plugin<Project> {
     override fun apply(target: Project) {
+        if (target.parent != null) {
+            throw IllegalArgumentException(WRONG_PROJECT_MSG)
+        }
         val ext = target.extensions.create<KmpExplorerExtension>("kmpExplorer")
 
         target.allprojects.forEach { currentProject ->
@@ -38,5 +41,9 @@ internal class KmpExplorerPlugin : Plugin<Project> {
             val outputName = "kmp-${type.name.lowercase()}-hierarchy.${fileExt}"
             hierarchyOutput.set(project.layout.buildDirectory.file(outputName))
         }
+    }
+
+    companion object {
+        internal const val WRONG_PROJECT_MSG = "KmpExplorer must be applied to root project!"
     }
 }
