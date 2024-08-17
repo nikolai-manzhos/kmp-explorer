@@ -3,11 +3,7 @@ package com.kmp.explorer.internal.render
 import com.kmp.explorer.external.SourceSetType
 import com.kmp.explorer.internal.KmpProjectStructure
 import com.kmp.explorer.internal.KmpSourceNode
-import guru.nidi.graphviz.attribute.Color
-import guru.nidi.graphviz.attribute.GraphAttr
-import guru.nidi.graphviz.attribute.Label
-import guru.nidi.graphviz.attribute.Rank
-import guru.nidi.graphviz.attribute.Shape
+import guru.nidi.graphviz.attribute.*
 import guru.nidi.graphviz.engine.Format
 import guru.nidi.graphviz.engine.Graphviz
 import guru.nidi.graphviz.model.Factory
@@ -23,10 +19,12 @@ private class GraphvizRenderer(
 ) : Renderer {
 
     override fun render(output: File) {
-        buildGraphvizOutput(output)
+        Graphviz.fromGraph(buildGraphvizGraph())
+            .render(format)
+            .toFile(output)
     }
 
-    private fun buildGraphvizOutput(output: File) {
+    private fun buildGraphvizGraph(): Graph {
         val root = kmpProjectStructure.rootProjectPath
         val projectGraphs = kmpProjectStructure.projectsKmpGraph
         val projectsHierarchy = kmpProjectStructure.projectDependencies
@@ -63,7 +61,7 @@ private class GraphvizRenderer(
             projectsHierarchy[current]?.forEach(queue::add)
         }
 
-        val g = Factory.graph("root").directed()
+        return Factory.graph("root").directed()
             .graphAttr()
             .with(GraphAttr.COMPOUND)
             .graphAttr()
@@ -77,8 +75,6 @@ private class GraphvizRenderer(
                     createClusterConnection(root, d, clusterLinks)
                 }
             })
-
-        Graphviz.fromGraph(g).render(format).toFile(output)
     }
 
     /**

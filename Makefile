@@ -2,7 +2,9 @@ generateSampleAppGraph:
 	./gradlew sample:composeApp:exploreGraph
 
 # gradle plugin shortcuts
-publishToMavenLocal:
+publish:
 	./gradlew tool:gradle-plugin:publishToMavenLocal
-buildPlugin:
+build:
 	./gradlew tool:gradle-plugin:build
+test:
+	./gradlew tool:gradle-plugin:check
