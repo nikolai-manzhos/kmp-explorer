@@ -34,6 +34,14 @@ kotlin {
     jvm()
     
     sourceSets {
+        val androidIntermediate by creating {
+            dependsOn(commonMain.get())
+        }
+
+        androidMain {
+            dependsOn(androidIntermediate)
+        }
+
         commonMain.dependencies {
             // put your Multiplatform dependencies here
         }

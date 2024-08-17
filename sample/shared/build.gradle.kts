@@ -42,6 +42,14 @@ kotlin {
     sourceSets {
         applyDefaultHierarchyTemplate()
 
+        val androidIntermediate by creating {
+            dependsOn(commonMain.get())
+        }
+
+        androidMain {
+            dependsOn(androidIntermediate)
+        }
+
         jvmMain.dependencies {
             implementation(projects.sample.jvmShared)
         }

@@ -1,0 +1,35 @@
+digraph "root" {
+edge ["dir"="forward"]
+graph ["compound"="true","rankdir"="LR"]
+subgraph "cluster_:composeApp" {
+edge ["dir"="none"]
+graph ["label"=":composeApp"]
+":composeApp:androidDebug" ["label"="androidDebug","shape"="box","color"="red"]
+":composeApp:commonMain" ["label"="commonMain","shape"="box","color"="red"]
+":composeApp:androidMain" ["label"="androidMain","shape"="box","color"="red"]
+":composeApp:androidRelease" ["label"="androidRelease","shape"="box","color"="red"]
+":composeApp:wasmJsMain" ["label"="wasmJsMain","shape"="box","color"="red"]
+":composeApp:commonMain" -> ":composeApp:wasmJsMain"
+":composeApp:commonMain" -> ":composeApp:androidRelease"
+":composeApp:commonMain" -> ":composeApp:androidMain"
+":composeApp:commonMain" -> ":composeApp:androidDebug"
+}
+subgraph "cluster_:shared" {
+edge ["dir"="none"]
+graph ["label"=":shared"]
+":shared:androidDebug" ["label"="androidDebug","shape"="box","color"="red"]
+":shared:commonMain" ["label"="commonMain","shape"="box","color"="red"]
+":shared:androidIntermediate" ["label"="androidIntermediate","shape"="box","color"="red"]
+":shared:androidRelease" ["label"="androidRelease","shape"="box","color"="red"]
+":shared:jvmMain" ["label"="jvmMain","shape"="box","color"="black"]
+":shared:wasmJsMain" ["label"="wasmJsMain","shape"="box","color"="red"]
+":shared:androidMain" ["label"="androidMain","shape"="box","color"="red"]
+":shared:commonMain" -> ":shared:wasmJsMain"
+":shared:commonMain" -> ":shared:jvmMain"
+":shared:commonMain" -> ":shared:androidRelease"
+":shared:commonMain" -> ":shared:androidIntermediate"
+":shared:commonMain" -> ":shared:androidDebug"
+":shared:androidIntermediate" -> ":shared:androidMain"
+}
+":composeApp:wasmJsMain" -> ":shared:commonMain" ["ltail"="cluster_:composeApp","lhead"="cluster_:shared","minlen"="4"]
+}

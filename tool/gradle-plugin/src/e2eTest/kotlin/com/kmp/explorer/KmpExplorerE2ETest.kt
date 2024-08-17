@@ -11,6 +11,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.File
 
 private const val CONFIGURATION_CACHE_REUSED = "Reusing configuration cache."
+private const val RESOURCES_PATH = "src/e2eTest/resources"
 
 class KmpExplorerE2ETest {
 
@@ -28,6 +29,9 @@ class KmpExplorerE2ETest {
         assertEquals(
             firstRun.tasks.first { it.path.contains("exploreMainGraph") }.outcome,
             TaskOutcome.SUCCESS)
+        val expected = File("$RESOURCES_PATH/expected.dot").readText()
+        val actual = File(projectDir, "composeApp/build/kmp-main-hierarchy.dot").readText()
+        assertEquals(expected, actual)
     }
 
     @Test
@@ -57,7 +61,7 @@ class KmpExplorerE2ETest {
     }
 
     private fun setupProjectDir() {
-        val resources = File("src/e2eTest/resources/kmp")
+        val resources = File("$RESOURCES_PATH/kmp")
         resources.copyRecursively(projectDir)
     }
 }
