@@ -36,8 +36,7 @@ private class GraphvizRenderer(
             val current = queue.removeFirst()
             val links = projectGraphs.getValue(current)
                 .flatMap { (root, children) ->
-                    // We still want to include root node in a cluster,
-                    // even if it's not connected
+                    // Include root node in a cluster even if it's not connected
                     if (children.isEmpty()) {
                         listOf(createNode(current, root))
                     } else {
@@ -78,7 +77,7 @@ private class GraphvizRenderer(
     }
 
     /**
-     * We have to find the deepest leaf in order to align clusters one after another.
+     * Find the deepest leaf in order to align clusters.
      **/
     private fun findDeepestLeaf(graph: Map<KmpSourceNode, List<KmpSourceNode>>): String {
         var res = graph.keys.first { curr ->

@@ -1,0 +1,13 @@
+digraph "root" {
+edge ["dir"="forward"]
+graph ["compound"="true","rankdir"="LR"]
+subgraph "cluster_app" {
+edge ["dir"="none"]
+graph ["label"="app"]
+"app:commonMain" ["label"="commonMain","shape"="box","color"="red"]
+"app:androidMain" ["label"="androidMain","shape"="box","color"="red"]
+"app:linuxMain" ["label"="linuxMain","shape"="box","color"="black"]
+"app:commonMain" -> "app:linuxMain"
+"app:commonMain" -> "app:androidMain"
+}
+}
