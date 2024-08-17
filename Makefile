@@ -1,5 +1,5 @@
 generateSampleAppGraph:
-	./gradlew sample:composeApp:exploreGraph
+	./gradlew sample:composeApp:exploreKmpGraph
 
 # gradle plugin shortcuts
 publish:

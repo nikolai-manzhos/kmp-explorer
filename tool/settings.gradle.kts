@@ -10,5 +10,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "kmp-explorer-gradle-plugin"
+rootProject.name = "kmp-explorer"
 include(":gradle-plugin")

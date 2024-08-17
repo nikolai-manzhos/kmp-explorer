@@ -7,6 +7,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.internal.provider.DefaultProvider
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.register
 
@@ -19,7 +20,7 @@ internal class KmpExplorerPlugin : Plugin<Project> {
 
         target.allprojects.forEach { currentProject ->
             currentProject.pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
-                currentProject.tasks.create("exploreGraph")
+                currentProject.tasks.create("exploreKmpGraph")
                     .dependsOn(currentProject.createTask(SourceSetType.MAIN, ext))
                     .dependsOn(currentProject.createTask(SourceSetType.TEST, ext))
             }
@@ -30,8 +31,8 @@ internal class KmpExplorerPlugin : Plugin<Project> {
         type: SourceSetType,
         extension: KmpExplorerExtension
     ): TaskProvider<KmpExplorerTask> {
-        val taskName = type.name.lowercase().capitalize()
-        return tasks.register<KmpExplorerTask>("explore${taskName}Graph") {
+        val taskName = type.name.lowercase().capitalized()
+        return tasks.register<KmpExplorerTask>("explore${taskName}KmpGraph") {
             formatProperty.set(extension.format)
             sourceSetTypeProperty.set(type)
             projectStructureProperty.set(DefaultProvider {

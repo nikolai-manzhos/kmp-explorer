@@ -27,7 +27,7 @@ class KmpExplorerE2ETest {
     fun `task executed succesfully`() {
         val firstRun = runKmpExplorerTask()
         assertEquals(
-            firstRun.tasks.first { it.path.contains("exploreMainGraph") }.outcome,
+            firstRun.tasks.first { it.path.contains("exploreMainKmpGraph") }.outcome,
             TaskOutcome.SUCCESS)
         val expected = File("$RESOURCES_PATH/expected.dot").readText()
         val actual = File(projectDir, "composeApp/build/kmp-main-hierarchy.dot").readText()
@@ -40,7 +40,7 @@ class KmpExplorerE2ETest {
         val secondRun = runKmpExplorerTask()
 
         assertEquals(
-            secondRun.tasks.first { it.path.contains("exploreMainGraph") }.outcome,
+            secondRun.tasks.first { it.path.contains("exploreMainKmpGraph") }.outcome,
             TaskOutcome.UP_TO_DATE
         )
     }
@@ -56,7 +56,7 @@ class KmpExplorerE2ETest {
     private fun runKmpExplorerTask(): BuildResult {
         return GradleRunner.create()
             .withProjectDir(projectDir)
-            .withArguments("composeApp:exploreGraph")
+            .withArguments("composeApp:exploreKmpGraph")
             .build()
     }
 

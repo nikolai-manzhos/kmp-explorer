@@ -33,12 +33,12 @@ kmpExplorer {
 ```
 # Usage
 The plugin will generate a set of tasks for each KMP project:
-* exploreGraph
-* exploreMainGraph
-* exploreTestGraph
+* exploreKmpGraph
+* exploreMainKmpGraph
+* exploreTestKmpGraph
 
 ```bash
-./gradlew sample:composeApp:exploreGraph
+./gradlew sample:composeApp:exploreKmpGraph
 ```
  You will find KMP graph representation under `sample/composeApp/build`.
 

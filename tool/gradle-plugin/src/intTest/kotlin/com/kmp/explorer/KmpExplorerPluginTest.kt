@@ -18,9 +18,9 @@ class KmpExplorerPluginTest {
         parent.pluginManager.apply("com.kmp.explorer")
         kmpProject.pluginManager.apply("org.jetbrains.kotlin.multiplatform")
 
-        assertTrue(kmpProject.tasks.getByName("exploreMainGraph") is KmpExplorerTask)
-        assertTrue(kmpProject.tasks.getByName("exploreTestGraph") is KmpExplorerTask)
-        assertNotNull(kmpProject.tasks.getByName("exploreGraph"))
+        assertTrue(kmpProject.tasks.getByName("exploreMainKmpGraph") is KmpExplorerTask)
+        assertTrue(kmpProject.tasks.getByName("exploreTestKmpGraph") is KmpExplorerTask)
+        assertNotNull(kmpProject.tasks.getByName("exploreKmpGraph"))
     }
 
     @Test
@@ -33,7 +33,7 @@ class KmpExplorerPluginTest {
             .build()
         jvm.pluginManager.apply("application")
 
-        assertNull(jvm.tasks.firstOrNull { it.name == "exploreGraph"})
+        assertNull(jvm.tasks.firstOrNull { it.name == "exploreKmpGraph"})
     }
 
     @Test

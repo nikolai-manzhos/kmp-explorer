@@ -42,9 +42,6 @@ val intTestImplementation by configurations.getting {
     extendsFrom(configurations.implementation.get())
     extendsFrom(configurations.testImplementation.get())
 }
-val intTestRuntimeOnly by configurations.getting {
-    extendsFrom(configurations.runtimeOnly.get())
-}
 
 val integrationTestTask = tasks.register<Test>("integrationTest") {
     description = "Runs the integration tests."
@@ -59,8 +56,8 @@ val functionalTest = tasks.register<Test>("functionalTest") {
     testClassesDirs = sourceSets.getByName("e2eTest").output.classesDirs
     classpath = sourceSets.getByName("e2eTest").runtimeClasspath
     mustRunAfter(tasks.test)
-    mustRunAfter(tasks.get("publishToMavenLocal"))
-    dependsOn(tasks.get("publishToMavenLocal"))
+    mustRunAfter(tasks["publishToMavenLocal"])
+    dependsOn(tasks["publishToMavenLocal"])
 }
 
 val compilations = project.extensions
