@@ -1,5 +1,5 @@
 # Kmp Explorer
-Gradle plugin to help visualize relations between KMP's source sets.
+Gradle plugin that helps visualize relations between KMP's source sets.
 
 # Getting Started
 
@@ -44,4 +44,4 @@ The plugin will generate a set of tasks for each KMP project:
 
 # Development
 
-You can build the plugin by running `make build` and run all tests using `make test`.
+You can build the plugin by running `make assemble` and execute all tests using `make test`.

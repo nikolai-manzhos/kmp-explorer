@@ -4,7 +4,7 @@ generateSampleAppGraph:
 # gradle plugin shortcuts
 publish:
 	./gradlew tool:gradle-plugin:publishToMavenLocal
-build:
-	./gradlew tool:gradle-plugin:build
+assemble:
+	./gradlew tool:gradle-plugin:assemble
 test:
 	./gradlew tool:gradle-plugin:check

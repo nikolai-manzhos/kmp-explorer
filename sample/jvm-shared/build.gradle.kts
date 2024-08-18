@@ -4,4 +4,5 @@ plugins {
 
 kotlin {
     jvm("jvm1")
+    jvm("jvm2")
 }

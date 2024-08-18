@@ -64,6 +64,7 @@ val compilations = project.extensions
     .getByType(KotlinJvmProjectExtension::class.java)
         .target.compilations
 
+// enable access to internal classes
 compilations.getByName(sourceSets.getByName("intTest").name)
     .associateWith(compilations.getByName(SourceSet.MAIN_SOURCE_SET_NAME));
 

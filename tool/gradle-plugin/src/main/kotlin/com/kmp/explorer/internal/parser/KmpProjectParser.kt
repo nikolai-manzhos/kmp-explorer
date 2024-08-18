@@ -145,9 +145,7 @@ internal class KmpProjectParser(
 
     private fun KotlinTarget.extractFullName(): String {
         val postfix = when (platformType) {
-            common -> ""
-            jvm -> ""
-            js -> ""
+            common, jvm, js -> ""
             androidJvm -> (this as KotlinAndroidTarget).name
             native -> (this as KotlinNativeTarget).konanTarget.name
             wasm -> (this as KotlinJsIrTarget).wasmTargetType?.name
